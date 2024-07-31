@@ -1,14 +1,15 @@
 const express = require("express");
 const { taskModel } = require("../models/task.model");
+const { isAuthenticated } = require("../middlewares/authentication");
 const taskRouter = express.Router();
 
 //! getting all task of a user
 
-taskRouter.get("/get", async (req, res) => {
+taskRouter.get("/get", isAuthenticated, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    let tasks = await taskModel.find({ user: userId });
+    let tasks = await taskModel.find({ user: userId }).select("-user");
     return res.status(200).send({
       message: "Tasks retrieved successfully",
       tasks,
@@ -19,7 +20,7 @@ taskRouter.get("/get", async (req, res) => {
 });
 
 //! adding a new task
-taskRouter.post("/add", async (req, res) => {
+taskRouter.post("/add", isAuthenticated, async (req, res) => {
   const { title, description, status, priority, deadline } = req.body;
   const userId = req.user.id;
 
@@ -38,27 +39,24 @@ taskRouter.post("/add", async (req, res) => {
       task: newTask,
     });
   } catch (err) {
+    console.log(err);
     return res.status(500).send({ message: "Something went wrong" });
   }
 });
 
 //! edit a task
-taskRouter.put("/edit/:taskId", async (req, res) => {
+taskRouter.patch("/edit/:taskId", isAuthenticated, async (req, res) => {
   const { taskId } = req.params;
-  const userId = req.user.id;
 
   try {
-    let task = await taskModel.findOne({ _id: taskId, user: userId });
+    let task = await taskModel.findOne({ _id: taskId });
     if (!task) {
       return res.status(404).send({ message: "Task not found" });
     }
 
-    let updatedTask = await taskModel.findByIdAndUpdate(taskId, req.body, {
-      new: true,
-    });
+    await taskModel.findByIdAndUpdate(taskId, req.body);
     return res.status(200).send({
       message: "Task updated successfully",
-      task: updatedTask,
     });
   } catch (err) {
     return res.status(500).send({ message: "Something went wrong" });
@@ -67,7 +65,7 @@ taskRouter.put("/edit/:taskId", async (req, res) => {
 
 //! delete a task
 
-taskRouter.delete("/delete/:taskId", async (req, res) => {
+taskRouter.delete("/delete/:taskId", isAuthenticated, async (req, res) => {
   const { taskId } = req.params;
   const userId = req.user.id;
 

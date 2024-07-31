@@ -8,6 +8,8 @@ const authRouter = require("./routes/auth.routes");
 const { taskRouter } = require("./routes/task.routes");
 const { connection } = require("./config/Database");
 const server = http.createServer(app);
+
+app.use(express.json());
 app.use(
   cors({
     origin: "*",
